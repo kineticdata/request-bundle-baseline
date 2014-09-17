@@ -1,0 +1,46 @@
+<%!
+    /**
+     * Escapes html entities so they are rendered in the browser as text
+     *
+     * @param rawString - the raw string to escape
+     * @return the raw string with all html characters replaced with entity values
+     */
+    public static String escape(Object rawString) {
+        if (rawString == null || "".equals(rawString)) {
+            return "";
+        } else {
+            return StringEscapeUtils.escapeHtml4(rawString.toString());
+        }
+    }
+    
+    public static String escape(Object rawString, String defaultText) {
+        String escaped = escape(rawString);
+        if ("".equals(escaped)) {
+            return defaultText;
+        } else {
+            return escaped;
+        }
+    }
+
+    public static String escapeXML(Object rawString) {
+        if (rawString == null || "".equals(rawString)) {
+            return "";
+        } else {
+            return StringEscapeUtils.escapeXml(rawString.toString());
+        }
+    }
+
+    /**
+     * Escapes the characters in a String using EcmaScript String rules.
+     *
+     * @param Object
+     * @return String
+     */
+    public static String escapeEcmaScript(Object rawString) {
+        if (rawString == null || "".equals(rawString)) {
+            return "";
+        } else {
+            return StringEscapeUtils.escapeEcmaScript(rawString.toString());
+        }
+    }
+%>

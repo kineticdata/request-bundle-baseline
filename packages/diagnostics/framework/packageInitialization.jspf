@@ -1,0 +1,7 @@
+<%@page import="com.kd.kineticSurvey.impl.RemedyHandler"
+%><%@page import="java.util.*"
+%><%@include file="ArsServerHelper.jspf"
+%><%@include file="WebServerHelper.jspf"
+%><%
+    com.bmc.arsys.api.ARServerUser user = RemedyHandler.getDefaultHelperContext().getContextCopy();
+%>

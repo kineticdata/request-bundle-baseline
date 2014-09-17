@@ -1,0 +1,41 @@
+<%!
+    public static class Route {
+        private HttpServletRequest request;
+        
+        public Route(HttpServletRequest request) {
+            this.request = request;
+        }
+        
+        public String to(String page) throws java.io.UnsupportedEncodingException {
+            String encodedPage = encode(page);
+            String parameterString;
+            if (request.getParameter("name") != null) {
+                parameterString = "name="+encode(request.getParameter("name"));
+            } else {
+                parameterString = "srv="+encode(request.getParameter("srv"));
+            }
+            return request.getContextPath()+"/DisplayPage?"+parameterString+"&page="+encodedPage;
+        }
+        
+        public String toHome() throws java.io.UnsupportedEncodingException {
+            String parameterString;
+            if (request.getParameter("name") != null) {
+                parameterString = "name="+encode(request.getParameter("name"));
+            } else {
+                parameterString = "srv="+encode(request.getParameter("srv"));
+            }
+            return request.getContextPath()+"/DisplayPage?"+parameterString;
+        }
+        
+        private String encode(String string) {
+            String result;
+            try {
+                result = java.net.URLEncoder.encode(string, "UTF-8")
+                    .replaceAll("\\%2F", "/");
+            } catch (java.io.UnsupportedEncodingException e) {
+                throw new RuntimeException("Unable to encode URI component.", e);
+            }
+            return result;
+        }
+    }
+%>

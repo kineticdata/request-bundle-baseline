@@ -1,0 +1,155 @@
+<%!
+    public static class WebServerHelper {
+        public static java.util.LinkedHashMap<String,String> getInformation(
+            ServletContext context
+        ) {
+            // Declare the results
+            java.util.LinkedHashMap<String,String> results = new java.util.LinkedHashMap<String,String>();
+            
+            // Add the web server information
+            results.put("Application Directory", context.getRealPath("/").replaceAll("[\\/\\\\]$", ""));
+            results.put("Web Server", context.getServerInfo());
+            results.put("Web Server Time", new java.util.Date().toString());
+            // Add the machine information
+            results.put("Host", getHostInfo());
+            results.put("Host OS", getHostOS());
+            results.put("Java Location", getSystemProperty("java.home"));
+            results.put("Java Version", getJavaVersion());
+
+            Runtime rt = Runtime.getRuntime();
+            results.put("Runtime Memory", Long.toString(rt.totalMemory() / (1024 * 1024)) + " MB");
+            results.put("Runtime Max Memory", Long.toString(rt.maxMemory() / (1024 * 1024)) + " MB");
+            
+            // Return the results
+            return results;
+        }
+        
+        /**
+         * <p>Returns a human readable string of hostnames and corresponding IP addresses, excluding
+         * localhost/loopback addresses.
+         * 
+         * <p>Example results:
+         * <pre>
+         * {@code
+         * server.kineticdata.com (fe80:0:0:0:5e96:9dff:fe96:2ca9%6), server.kineticdata.com (172.16.3.170)
+         * }</pre>
+         * <code></code>
+         * 
+         * @return a human readable string of hostnames and corresponding IP addresses
+         */
+        public static String getHostInfo() {
+            // Initialize the result
+            StringBuilder result = new StringBuilder();
+            // For each of the host info pairings (excluding localhost addresses)
+            for(java.util.Map.Entry<String,String> entry : getHostInfos(false).entrySet()) {
+                // Add a comma unless this is the first listing
+                if (result.length() != 0) { result.append(", "); }
+                // Add the entry string
+                result.append(entry.getKey()).append(" (").append(entry.getValue()).append(")");
+            }
+            // Return the result
+            return result.toString();
+        }
+        
+        /**
+         * <p>Returns a map of hostnames to IP addresses.
+         * 
+         * <p>Example results (assuming <code>includeLoopback</code> is set to <code>false</code>):
+         * <pre>
+         * {@code
+         * server.kineticdata.com: 172.16.3.170
+         * server.kineticdata.com: fe80:0:0:0:5e96:9dff:fe96:2ca9%6
+         * }</pre>
+         * 
+         * @param includeLoopback indicates whether the localhost/loopback (IE 127.0.0.1 and/or
+         *        0:0:0:0:0:0:0:1 should be included in the results)
+         * @return map of hostname to IP addresses
+         */
+        public static java.util.Map<String,String> getHostInfos(boolean includeLoopback) {
+            // Declare the results
+            java.util.Map<String,String> results = new java.util.LinkedHashMap<String,String>();
+
+            // Attempt to check each of the network interfaces for one or more addresses
+            try {
+                // For each of the network interfaces
+                java.util.Enumeration<java.net.NetworkInterface> networkInterfaceEnumeration = java.net.NetworkInterface.getNetworkInterfaces();
+                while(networkInterfaceEnumeration.hasMoreElements()) {
+                    // Obtain a reference to the current interface
+                    java.net.NetworkInterface networkInterface = networkInterfaceEnumeration.nextElement();
+                    // For each of the network interface addresses
+                    java.util.Enumeration<java.net.InetAddress> addressEnumeration =  networkInterface.getInetAddresses();
+                    while(addressEnumeration.hasMoreElements()) {
+                        // Obtain a reference to the address
+                        java.net.InetAddress address = addressEnumeration.nextElement();
+                        // Unless the address should be excluded
+                        if (includeLoopback || (!address.isLoopbackAddress() && !address.isLinkLocalAddress())) {
+                            // Add the address to the results
+                            results.put(address.getCanonicalHostName(), address.getHostAddress());
+                        }
+                    }
+                 }
+            }
+            // If there was a problem obtaining the adress information
+            catch (Exception e) {
+                // Add the result
+                results.put("Unknown Hostname", "Unknown Address");
+            }
+
+            // Return the results
+            return results;
+        }
+
+        /**
+         * <p>Returns a human readable name and version of the host operating system.
+         * 
+         * <p>Example results:
+         * <pre>
+         * {@code
+         * Mac OS X 10.8.5 (x86_64)
+         * }</pre>
+         * 
+         * @return a human readable name and version of the host operating system
+         */
+        public static String getHostOS() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(getSystemProperty("os.name")).append(" ").append(getSystemProperty("os.version"));
+            sb.append(" (").append(getSystemProperty("os.arch")).append(")");
+            return sb.toString();
+        }
+
+        /**
+         * <p>Returns a human representation of the Java version, including vendor.
+         * 
+         * <p>Example results:
+         * <pre>
+         * {@code
+         * Java(TM) SE Runtime Environment (1.6.0_65-b14-462-11M4609)
+         * }</pre>
+         * 
+         * @return a human representation of the Java version, including vendor
+         */
+        public static String getJavaVersion() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(getSystemProperty("java.runtime.name"));
+            sb.append(" (").append(getSystemProperty("java.runtime.version")).append(")");
+            return sb.toString();
+        }
+    
+
+        /*---------------------------------------------------------------------------------------------
+         * PRIVATE HELPER METHODS
+         *--------------------------------------------------------------------------------------------*/
+
+        /**
+         * @param key
+         * @return the results of <code>System.getProperty(key)</code> or "Unknown" if there is an error
+         */
+        private static String getSystemProperty(String key) {
+            try {
+                return System.getProperty(key);
+            } catch (Exception e) {
+                return "Unknown";
+            }
+        }
+    }
+%>

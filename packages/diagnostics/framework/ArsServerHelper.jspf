@@ -1,0 +1,130 @@
+<%!
+    public static class ArsServerHelper {
+        
+        public static Long getLatencyToDatabase(
+            com.bmc.arsys.api.ARServerUser user
+        ) throws com.bmc.arsys.api.ARException {
+            com.bmc.arsys.api.QualifierInfo qualification = user.parseQualification("User", "'1'<0");
+            long start = System.currentTimeMillis();
+            user.getListEntry("User", qualification, 0, 0, null, null, false, null);
+            return System.currentTimeMillis()-start;
+        }
+        
+        public static java.util.LinkedHashMap<String,String> getLatencyToDatabaseInformation(
+            com.bmc.arsys.api.ARServerUser user,
+            int count
+        ) throws com.bmc.arsys.api.ARException {
+            // Declare the results
+            java.util.LinkedHashMap<String,String> results = new java.util.LinkedHashMap<String,String>();
+            // Query count times
+            java.util.ArrayList<Long> durations = new java.util.ArrayList<Long>();
+            long total = 0;
+            long min = Long.MAX_VALUE;
+            long max = Long.MIN_VALUE;
+            for (int i=0;i<count;i++) {
+                long duration = getLatencyToDatabase(user);
+                durations.add(duration);
+                total = total + duration;
+                if (duration < min) { min = duration; }
+                if (duration > max) { max = duration; }
+            }
+            // Build results
+            results.put("Average", String.valueOf(total/count)+"ms");
+            results.put("Min", String.valueOf(min)+"ms");
+            results.put("Max", String.valueOf(max)+"ms");
+            results.put("Durations", org.apache.commons.lang3.StringUtils.join(durations, ", "));
+            
+            // Return the results
+            return results;
+        }
+        
+        public static Long getLatency(
+            com.bmc.arsys.api.ARServerUser user
+        ) throws com.bmc.arsys.api.ARException {
+            long start = System.currentTimeMillis();
+            user.getServerInfo(new int[] {
+                com.bmc.arsys.api.Constants.AR_SERVER_INFO_SERVER_TIME,
+            });
+            return System.currentTimeMillis()-start;
+        }
+        
+        public static java.util.LinkedHashMap<String,String> getLatencyInformation(
+            com.bmc.arsys.api.ARServerUser user,
+            int count
+        ) throws com.bmc.arsys.api.ARException {
+            // Declare the results
+            java.util.LinkedHashMap<String,String> results = new java.util.LinkedHashMap<String,String>();
+            // Query count times
+            java.util.ArrayList<Long> durations = new java.util.ArrayList<Long>();
+            long total = 0;
+            long min = Long.MAX_VALUE;
+            long max = Long.MIN_VALUE;
+            for (int i=0;i<count;i++) {
+                long duration = getLatency(user);
+                durations.add(duration);
+                total = total + duration;
+                if (duration < min) { min = duration; }
+                if (duration > max) { max = duration; }
+            }
+            // Build results
+            results.put("Average", String.valueOf(total/count)+"ms");
+            results.put("Min", String.valueOf(min)+"ms");
+            results.put("Max", String.valueOf(max)+"ms");
+            results.put("Durations", org.apache.commons.lang3.StringUtils.join(durations, ", "));
+            
+            // Return the results
+            return results;
+        }
+        
+        public static java.util.LinkedHashMap<String,String> getInformation(
+            com.bmc.arsys.api.ARServerUser user
+        ) throws com.bmc.arsys.api.ARException {
+            // Declare the results
+            java.util.LinkedHashMap<String,String> results = new java.util.LinkedHashMap<String,String>();
+            // Retrieve the server information
+            com.bmc.arsys.api.ServerInfoMap info = user.getServerInfo(new int[] {
+                com.bmc.arsys.api.Constants.AR_SERVER_INFO_DB_TYPE,
+                com.bmc.arsys.api.Constants.AR_SERVER_INFO_DB_VERSION,
+                com.bmc.arsys.api.Constants.AR_SERVER_INFO_SERVER_TIME,
+                com.bmc.arsys.api.Constants.AR_SERVER_INFO_SERVERGROUP_NAME,
+                com.bmc.arsys.api.Constants.AR_SERVER_INFO_VERSION
+            });
+
+            String serverGroup = info.get(com.bmc.arsys.api.Constants.AR_SERVER_INFO_SERVERGROUP_NAME).toString();
+            if (org.apache.commons.lang3.StringUtils.isBlank(serverGroup)) { serverGroup = "None"; }
+
+            long timestamp = 1000L * info.get(com.bmc.arsys.api.Constants.AR_SERVER_INFO_SERVER_TIME).getIntValue();
+            String serverTime = new java.util.Date(timestamp).toString();
+
+            // Build the connection pooling
+            String connectionPooling;
+            if (com.bmc.arsys.api.ProxyManager.isUseConnectionPooling()) {
+                StringBuilder buffer = new StringBuilder();
+                buffer.append(com.bmc.arsys.api.ProxyManager.getMaxProxiesPerServer()).append(" per server");
+                int length = buffer.length();
+                String serverReference = user.getPort() == 0 ? user.getServer() : user.getServer()+":"+user.getPort();
+                for (com.bmc.arsys.api.ProxyManager.PoolInfo poolInfo : com.bmc.arsys.api.ProxyManager.getPoolInformation()) {
+                    if (serverReference.equals(poolInfo.getPoolServerName())) { 
+                        if (buffer.length() == length) { buffer.append(" -- "); }
+                        buffer.append(poolInfo.getPoolServerName()).append(" (");
+                        buffer.append(poolInfo.getPoolFree()).append(" free, ");
+                        buffer.append(poolInfo.getPoolInUse()).append(" in use, ");
+                        buffer.append(poolInfo.getPoolNotCreated()).append(" not created)");
+                    }
+                }
+                connectionPooling = buffer.toString();
+            } else {
+                connectionPooling = "Disabled";
+            }
+
+            results.put("AR Server", (user.getPort() == 0) ? user.getServer() : user.getServer()+":"+user.getPort());
+            results.put("AR Server Database", info.get(com.bmc.arsys.api.Constants.AR_SERVER_INFO_DB_TYPE) + " " + info.get(com.bmc.arsys.api.Constants.AR_SERVER_INFO_DB_VERSION));
+            results.put("AR Server Group", serverGroup);
+            results.put("AR Server Time", serverTime);
+            results.put("AR Server Version", info.get(com.bmc.arsys.api.Constants.AR_SERVER_INFO_VERSION).toString());
+            results.put("Connection Pooling", connectionPooling);
+            // Return the results
+            return results;
+        }
+    }
+%>
